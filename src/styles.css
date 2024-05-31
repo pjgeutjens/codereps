@@ -1,0 +1,52 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+body {
+  background: #444;
+  color: #ffd;
+  font-size: 200%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#game {
+  padding: 2em;
+}
+#text {
+  font-family: monospace;
+}
+
+.correct {
+  color: lightgreen;
+}
+
+.error {
+  background: tomato;
+}
+.skipped {
+  color: gray;
+}
+
+#caret {
+  position: absolute;
+  background: goldenrod;
+  width: 2px;
+  animation: blink 1s infinite;
+  z-index: 1;
+  transition: left 0.1s;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
