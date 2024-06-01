@@ -15,6 +15,26 @@ body {
   justify-content: center;
   align-items: center;
 }
+
+#settings {
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* padding: 1em; */
+  background: #222;
+  color: #ddd;
+  font-size: medium;
+}
+
+#stats {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  /* padding: 1em; */
+  background: #222;
+  color: #ddd;
+  font-size: medium;
+}
 #game {
   padding: 2em;
 }
@@ -31,6 +51,10 @@ body {
 }
 .skipped {
   color: gray;
+}
+
+.semi {
+  color: rgb(148, 117, 88);
 }
 
 #caret {

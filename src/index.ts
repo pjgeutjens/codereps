@@ -8,6 +8,7 @@ enum State {
   ERROR,
   TYPED,
   SKIPPED,
+  SEMI,
 }
 type Part = {
   character: string;
@@ -17,6 +18,14 @@ type GameState = {
   position: number;
   sequence: Part[];
 };
+
+type Settings = {
+  ignoreSemicolon: boolean
+}
+
+const game_settings: Settings = {
+  ignoreSemicolon: false
+}
 
 const intro_elm = document.getElementById("intro");
 
@@ -28,7 +37,13 @@ const score_elm = document.getElementById("score");
 const wpm_elem = document.getElementById("wpm");
 const acc_elem = document.getElementById("accuracy");
 
-const render = (game_state: GameState) => {
+const settings_elem = document.getElementById("settings");
+settings_elem.innerHTML = `<span>ignore semicolons <input type="checkbox" id="ignoreSemicolon" name="ignoreSemicolon" ${game_settings.ignoreSemicolon ? "checked" : ""} />${game_settings.ignoreSemicolon}</span>`
+
+const stats_elem = document.getElementById("stats");
+
+const render = (game_state: GameState, word_count: number, error_pos: Set<any>) => {
+  stats_elem.innerHTML = `words: ${word_count} <br/> errors: ${error_pos ? error_pos.size : 0} <br/>`
   const text_html = game_state.sequence
     .map(({ character, state }: Part, idx) => {
       // console.log("I am", character, character.charCodeAt(0))
@@ -45,6 +60,9 @@ const render = (game_state: GameState) => {
         case State.SKIPPED:
           cls.push("skipped");
           break;
+        case State.SEMI:
+          cls.push("semi");
+          break;
       }
       if (idx === game_state.position) {
         cls.push("current");
@@ -58,7 +76,7 @@ const render = (game_state: GameState) => {
       return `<span class="${cls.join(" ")}">${character}</span>`;
     })
     .join("");
-    // console.log(text_html)
+  // console.log(text_html)
 
   text_elm.innerHTML = text_html;
 
@@ -173,12 +191,12 @@ const start = () => {
   const words = shuffle(dictionary).slice(0, 20);
 
   document.getElementById("game").style.display = "";
+
   let text = `
 export const test = () => {
-  const result = 42;
-  return result;
+  return x;
 };
-  `.trim();sprin
+  `.trim();
 
   const game_state = {
     position: 0,
@@ -186,6 +204,7 @@ export const test = () => {
       character,
       state: State.REMAINING,
     })),
+    ignoreSemicolon: true,
   };
   const letter_count = text.length;
   const get_at = (position) => game_state.sequence[position];
@@ -217,36 +236,52 @@ export const test = () => {
       console.log("processing enter");
       let current = get_current();
       let next = get_next();
-      if (!next) {
+      console.log(current, next)
+      if (!next || !current) {
         game_state.position++
+        if (game_state.position >= game_state.sequence.length) {
+          word_count++
+          done()
+        }
       }
-      console.log("ENTER")
-      while  (current.character.charCodeAt(0) === 10 || current.character.charCodeAt(0) === 32 || current.character === " " ) {
-        console.log("SKIP", current.character.charCodeAt(0))
+      if (current.character === ";") {
+        switch (game_settings.ignoreSemicolon) {
+          case true:
+            console.log("IGNORING SEMICOLON")
+            current.state = State.SEMI
+            game_state.position++
+            break
+          case false:
+            console.log("ERROR SEMICOLON")
+            current.state = State.ERROR
+            error_pos.add(game_state.position)
+            game_state.position++
+            break
+        }
+        current = get_current()
+        next = get_next()
+      }
+
+      while (current && current.character.charCodeAt(0) === 10 || current.character.charCodeAt(0) === 32 || current.character === " ") {
+        // console.log("SKIP", current.character.charCodeAt(0))
         current.state = State.TYPED;
         game_state.position++;
         current = get_current();
-        console.log(current)
-        next = get_next();
-        console.log(next)
-
-
+        next = get_next()
       }
 
     } else if (alphabet.has(e.key)) {
       console.log("processing letter");
       const current = get_current();
+      const next = get_next();
+      console.log(current, next)
       if (current.character === e.key) {
-        console.log("HIT")
-
         current.state = State.TYPED;
-        if (e.key === " ") {
+        if (e.key === " " || e.key === ";") {
           word_count++;
         }
         game_state.position++;
       } else if (e.key === " ") {
-        console.log("SPACE")
-
         if (
           game_state.position > 0 &&
           get_at(game_state.position - 1).character !== " "
@@ -265,15 +300,13 @@ export const test = () => {
           game_state.position++;
         }
       } else {
-        console.log("??")
-
         current.state = State.ERROR;
         error_pos.add(game_state.position);
         game_state.position++;
       }
     }
     if (last_position !== game_state.position) {
-      render(game_state);
+      render(game_state, word_count, error_pos)
     }
     if (game_state.position > 0 && start_time === null) {
       start_time = performance.now();
@@ -298,7 +331,7 @@ export const test = () => {
 
   window.addEventListener("keydown", onkeydown);
 
-  render(game_state);
+  render(game_state, word_count, error_pos);
 };
 
 const bind_play = (elm: HTMLElement) => {
